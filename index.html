@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>쇼츠 영상 재생</title>
+  <style>
+    /* 9:16 비율 비디오 플레이어 컨테이너 */
+    .video-container {
+      position: relative;
+      width: 270px;
+      height: 480px;
+      background-color: #000;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* 중앙 오버레이 재생 버튼 */
+    .play-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 60px;
+      height: 60px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: none;
+      color: #fff;
+      font-size: 24px;
+    }
+
+    .controls-bar {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+      width: 270px;
+    }
+
+    .btn-play {
+      flex: 1;
+      padding: 10px;
+      background-color: #d19a4c;
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-upload {
+      margin-top: 12px;
+      padding: 10px 16px;
+      background-color: #8c203b;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      display: inline-block;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="video-container">
+    <video id="mainVideo" playsinline preload="metadata">
+      <source src="영상 완성도.mp4" type="video/mp4">
+      브라우저가 비디오 태그를 지원하지 않습니다.
+    </video>
+    
+    <button id="centerPlayBtn" class="play-overlay" type="button">▶</button>
+  </div>
+
+  <div class="controls-bar">
+    <button id="bottomPlayBtn" class="btn-play" type="button">▶ 쇼츠 영상 재생</button>
+    <button id="muteBtn" type="button" style="padding: 10px; background: #222; color: #fff; border: 1px solid #444; border-radius: 6px; cursor: pointer;">🔊</button>
+  </div>
+
+  <div>
+    <label for="videoFileInput" class="btn-upload">
+      📁 내 컴퓨터에서 영상 파일 불러오기
+    </label>
+    <input type="file" id="videoFileInput" accept="video/mp4,video/*">
+  </div>
+
+  <script>
+    const video = document.getElementById('mainVideo');
+    const centerPlayBtn = document.getElementById('centerPlayBtn');
+    const bottomPlayBtn = document.getElementById('bottomPlayBtn');
+    const muteBtn = document.getElementById('muteBtn');
+    const fileInput = document.getElementById('videoFileInput');
+
+    // 재생 / 일시정지 토글 함수
+    function togglePlay() {
+      if (video.paused || video.ended) {
+        video.play().then(() => {
+          centerPlayBtn.style.display = 'none';
+          bottomPlayBtn.textContent = '❚❚ 일시정지';
+        }).catch((err) => {
+          console.error("자동 재생 차단 또는 파일 에러:", err);
+          alert("영상을 재생할 수 없습니다. 파일을 먼저 선택하거나 브라우저 설정을 확인하세요.");
+        });
+      } else {
+        video.pause();
+        centerPlayBtn.style.display = 'flex';
+        bottomPlayBtn.textContent = '▶ 쇼츠 영상 재생';
+      }
+    }
+
+    // 영상 클릭 및 버튼 클릭 이벤트 연결
+    video.addEventListener('click', togglePlay);
+    centerPlayBtn.addEventListener('click', togglePlay);
+    bottomPlayBtn.addEventListener('click', togglePlay);
+
+    // 음소거 토글
+    muteBtn.addEventListener('click', () => {
+      video.muted = !video.muted;
+      muteBtn.textContent = video.muted ? '🔇' : '🔊';
+    });
+
+    // 영상 종료 시 버튼 복구
+    video.addEventListener('ended', () => {
+      centerPlayBtn.style.display = 'flex';
+      bottomPlayBtn.textContent = '▶ 쇼츠 영상 재생';
+    });
+
+    // 핵심: 로컬 파일(영상 완성도.mp4) 선택 시 Blob URL 생성 및 비디오 소스 교체
+    fileInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // 이전 객체 URL 메모리 해제
+      if (video.src && video.src.startsWith('blob:')) {
+        URL.revokeObjectURL(video.src);
+      }
+
+      // 선택한 로컬 파일로 Blob URL 생성 후 video 태그에 바인딩
+      const objectUrl = URL.createObjectURL(file);
+      video.src = objectUrl;
+      video.load();
+
+      // 파일 로드 완료 후 자동 재생 시도
+      video.onloadeddata = () => {
+        video.play().then(() => {
+          centerPlayBtn.style.display = 'none';
+          bottomPlayBtn.textContent = '❚❚ 일시정지';
+        }).catch(() => {
+          // 브라우저 정책으로 자동 재생 실패 시 수동 대기
+          centerPlayBtn.style.display = 'flex';
+          bottomPlayBtn.textContent = '▶ 쇼츠 영상 재생';
+        });
+      };
+    });
+  </script>
+</body>
+</html>
